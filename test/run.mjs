@@ -63,6 +63,23 @@ for (const file of sources) {
   }
 }
 
+console.log('\n── Stacking: the host owns it ─────────────────────────────────');
+
+// A hardcoded z-index here shipped a panel that opened UNDERNEATH a host whose
+// navigation rail sits at 8600 — it rendered, it was simply painted over, which
+// reads as "the buglog is dead" rather than "the buglog is misplaced". The
+// level has to come from the host, which is the only side that knows its own
+// scale, so this asserts the token exists and that no bare literal is left.
+{
+  const css = readFileSync(join(SRC, 'styles.js'), 'utf8');
+  const hostBlock = css.match(/:host\s*\{[\s\S]*?\n\}/);
+  ok('the :host block exists', !!hostBlock);
+  const block = hostBlock ? hostBlock[0] : '';
+  ok('the host block sets z-index from a custom property', /z-index:\s*var\(--buglog-z/.test(block));
+  ok('and not from a bare literal', !/z-index:\s*\d+\s*;/.test(block));
+  ok('the default is documented as a fallback', /var\(--buglog-z,\s*\d+\)/.test(block));
+}
+
 console.log('\n── Notes: authorship ──────────────────────────────────────────');
 
 eq('a note with no marks is the coding side', noteAuthor({ text: 'x' }), CODER);

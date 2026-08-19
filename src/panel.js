@@ -104,6 +104,7 @@ export class BuglogPanel extends HTMLElement {
   #replyText = '';
   #resolveText = '';
   #resolveBtn = null;
+  #outside = null;
 
   constructor() {
     super();
@@ -130,7 +131,51 @@ export class BuglogPanel extends HTMLElement {
   set open(next) { this.#setOpen(!!next); }
 
   connectedCallback() { this.#render(); }
-  disconnectedCallback() { this.#stopDictation(); }
+  disconnectedCallback() {
+    this.#stopDictation();
+    this.#unbindOutside();
+  }
+
+  /* ── Tap outside to dismiss (opt-in) ──────────────────────────────────────
+     Deliberately NOT a full-viewport catcher div, which is the usual way: this
+     panel exists to be used WHILE LOOKING AT the thing being reported, so
+     blocking scroll and hover on everything behind it would cost more than the
+     gesture is worth. A capture-phase document listener gives the same
+     dismissal with nothing blocked.
+
+     Nothing is lost by closing: the draft, any open editor and the filter all
+     live on the instance, so reopening restores exactly what was there. */
+
+  #bindOutside() {
+    if (this.#outside) return;
+    const isInside = (e) => {
+      // composedPath, not contains: everything in here is inside a shadow root,
+      // and e.target for a click on it is the host, which contains() misreads.
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      return path.includes(this);
+    };
+    const onDown = (e) => { if (!isInside(e)) this.#setOpen(false); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // Escape belongs to whichever editor is open first.
+      if (this.#editId || this.#resolveId || this.#replyKey) return;
+      this.#setOpen(false);
+    };
+    // Deferred a tick: the very pointerdown that opened the panel is still
+    // propagating and would otherwise close it again immediately.
+    const t = setTimeout(() => document.addEventListener('pointerdown', onDown, true), 0);
+    document.addEventListener('keydown', onKey);
+    this.#outside = () => {
+      clearTimeout(t);
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey);
+    };
+  }
+
+  #unbindOutside() {
+    this.#outside?.();
+    this.#outside = null;
+  }
 
   /* ── Config helpers ───────────────────────────────────────────────────── */
 
@@ -217,7 +262,10 @@ export class BuglogPanel extends HTMLElement {
   #setOpen(next) {
     if (this.#open === next) return;
     this.#open = next;
-    if (!next) {
+    if (next) {
+      if (this.#config.dismissOnOutsideClick) this.#bindOutside();
+    } else {
+      this.#unbindOutside();
       this.#stopDictation();
       this.#pos = null; // reopens at its anchor, so it never looks randomly placed
     }

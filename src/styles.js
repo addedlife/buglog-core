@@ -26,7 +26,14 @@ export const PANEL_CSS = `
      mount point and must never take part in page layout. */
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* WHERE THIS SITS IN THE HOST'S STACK IS THE HOST'S CALL, and getting it
+     wrong makes the panel look broken rather than misplaced: it opens, and is
+     painted over by the app's own chrome, so nothing appears to happen.
+     That is exactly what a hardcoded value did here — 50 is a sane default for
+     an app whose whole scale is two digits, and it buried the panel under a
+     host whose navigation rail sits at 8600. Every host with a stacking scale
+     of its own must set --buglog-z above its topmost chrome. */
+  z-index: var(--buglog-z, 50);
   pointer-events: none;
   font-family: Roboto, system-ui, sans-serif;
   color: var(--md-sys-color-on-surface);

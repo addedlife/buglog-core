@@ -93,6 +93,7 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 | `appVersion` | string | Enables the "fixed in vX ✓ running" marker with `isNewer`. |
 | `triage` | boolean (default `true`) | `false` gives reporter mode: no status control, no hand-off footer, softer vocabulary. |
 | `railMode` | boolean | Suppresses the built-in FAB, for a host with its own launcher. |
+| `dismissOnOutsideClick` | boolean | Clicking away, or Escape, closes the panel. Escape defers to an open editor first. |
 | `draggable` | boolean | Drag by the header, resize from the corner. |
 | `sequence` | boolean | Lifetime + open sequence numbers on each row. |
 | `reporters` | boolean | Show who filed a ticket, and include it in the paste. |
@@ -103,6 +104,19 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 | `verification` | `{ options: [{id,label,blurb}], proven: [id] }` | Resolving also asks how the fix was proven. |
 | `runBrief` | `{ repo, where[], gate[] }` | Adds "Start buglog run" to the footer. |
 | `isNewer` | `(a, b) => boolean` | Version comparison for the `fixedIn` marker. |
+
+### Stacking — set this, or the panel looks broken
+
+```css
+buglog-panel { --buglog-z: 9500; }   /* above your topmost chrome */
+```
+
+The panel is a fixed overlay and defaults to `z-index: 50`, which suits an app
+whose whole scale is two digits. **A host with a taller scale must raise it.**
+Getting this wrong does not look like a misplaced panel — the panel opens
+normally and is painted over by the app's own chrome, so nothing appears to
+happen at all. That is a real failure this package shipped once, against a host
+whose navigation rail sits at 8600.
 
 ### Theming
 
