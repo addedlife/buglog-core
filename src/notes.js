@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // The note thread on a ticket — who wrote each note, and what it answers.
 //
-// This is the shared, canonical copy. RabbiMetrics and Shamash Pro 4 both
-// import it from this package; neither carries its own version any more.
+// This is the shared, canonical copy. Both consuming apps import it from this
+// package; neither carries its own version any more.
 //
 // A reply is just another note. Two optional fields carry the thread:
 //
@@ -16,7 +16,7 @@
 // Nothing migrates and nothing is rewritten. An old note reads as a top-level
 // coder note, which is exactly what it was.
 //
-// Shamash additionally writes `from: 'developer' | 'reporter'` on notes echoed
+// One host additionally writes `from: 'developer' | 'reporter'` on notes echoed
 // between a member's compartment and the developer's ticket. That vocabulary
 // predates this file and is READ here rather than migrated — the note's text is
 // the record, and rewriting somebody's history to tidy a field name is not
@@ -43,9 +43,9 @@ export function noteAuthor(note) {
 }
 
 /**
- * A note's identity, and the anchor a reply points at. Shamash writes both `at`
- * (ISO) and `atMs`; the echo functions write `atMs` only; the oldest notes have
- * neither, and get no Reply button rather than an orphaned one.
+ * A note's identity, and the anchor a reply points at. Some notes carry both
+ * `at` (ISO) and `atMs`, some only `atMs`; the oldest have neither, and get no
+ * Reply button rather than an orphaned one.
  */
 export function noteKey(note) {
   const ms = note?.atMs ?? (typeof note?.at === 'number' ? note.at : null);
@@ -58,8 +58,8 @@ export function noteKey(note) {
  * here, and re-sends the whole array. Getting this wrong once erases every note
  * a ticket ever carried, which is why it is one function with its own test.
  *
- * `at` (ISO) is written alongside `atMs` because Shamash's existing resolve
- * path already stores both and its stored history is read by both spellings.
+ * `at` (ISO) is written alongside `atMs` because one host's existing resolve
+ * path already stores both, and its stored history is read by both spellings.
  *
  * @param {object[]|undefined} existing  whatever is on the ticket now
  * @param {string} text

@@ -2,9 +2,9 @@
 // <buglog-panel> — the buglog UI, once, for every app that has one.
 //
 // A native custom element rather than a React component or a bare function,
-// because that is the one substrate both consuming apps can host natively:
-// RabbiMetrics is vanilla DOM built on @material/web's own custom elements, and
-// React mounts a custom element like any other tag behind a thin wrapper.
+// because that is the one substrate both consuming apps can host natively: one
+// is vanilla DOM built on @material/web's own custom elements, and React mounts
+// a custom element like any other tag behind a thin wrapper.
 //
 // ── THE ISOLATION BOUNDARY, which is the whole point ────────────────────────
 //
@@ -15,10 +15,9 @@
 //     package has no dependencies at all, so a cross-project read or write is
 //     not a bug that could slip in, it is a thing the code has no path to do.
 //   • It never loads. The host sets `.bugs` to an array it already has.
-//   • It never saves. Every action dispatches a CustomEvent and stops. The
-//     host's own adapter — bugStore.js in RabbiMetrics, Store in Shamash,
-//     neither of which moved — is the only code in either repo that names a
-//     collection.
+//   • It never saves. Every action dispatches a CustomEvent and stops. Each
+//     host's own storage adapter — which did not move when this package was
+//     created — remains the only code in that repo naming a collection.
 //
 // So the two apps' logs cannot bleed into each other: nothing here knows either
 // one exists.

@@ -1,55 +1,53 @@
 # buglog-core
 
-The buglog panel, written once, used by RabbiMetrics and Shamash Pro 4.
+An in-app bug log — capture, triage, and a two-way note thread — as one native
+custom element, shared by two apps built on different frameworks.
 
-> Buglog ticket `lJEtZlwwIS76Uo3p0f6i`: "This buglog clones the shamash pro
-> buglog, but for a completely separate app. That buglog has undergone
-> extensive improvements that aren't mirrored. So create one design portal for
-> buglogs that's pulled by both apps, just design, data remains
-> compartmentalized."
+## Why it exists
 
-The first answer to that ticket was a shared **document** (`BUGLOG-DESIGN.md`),
-on the reasoning that the two apps are different frameworks and so could share
-conventions but not code. That reasoning was right about the frameworks and
-wrong about the conclusion, and it failed in practice within a day: the
-reply-to-a-note feature was written into both apps in one sitting, from one
-spec, and the two copies came out different anyway — `noteAuthor` grew an extra
-branch in one, `appendNote` grew an extra field in the other.
+Two apps had grown near-identical bug log panels. One is vanilla DOM built on
+`@material/web`; the other is React with its own component wrappers. Because
+they could not share a component, they shared a **design document** instead: a
+written list of conventions each app implemented for itself.
 
-A document cannot stop that. It can only record it afterwards.
+That failed inside a day. A reply-to-a-note feature was written into both apps
+in one sitting, from one spec, by one author — and the two implementations still
+came out different. One grew an extra branch in its author-detection; the other
+grew an extra field on write.
 
-So the shared thing is now the code, and the substrate is a **native custom
+A document cannot prevent that. It can only record it afterwards.
+
+So the shared thing is the code now, and the substrate is a **native custom
 element** — the one thing both apps can host without either changing framework.
-RabbiMetrics is vanilla DOM built on `@material/web`'s own custom elements, so
-this is native there. React mounts a custom element like any other tag, so
-Shamash needs one thin wrapper and no rewrite.
+It is native in the vanilla-DOM app. React mounts a custom element like any
+other tag, so the React app needs one thin wrapper and no rewrite.
 
 ## The isolation boundary
 
-The ticket says "data remains compartmentalized," and that is not enforced by
-this README. It is enforced by what the package physically cannot do:
+The two apps' bug logs live in completely separate databases and must never
+touch. That is not enforced by this README — it is enforced by what the package
+physically cannot do:
 
-- **It has no dependencies.** Not "does not use firebase" — has no `dependencies`
-  block at all. There is no import in `src/` that resolves outside `src/`.
+- **It has no dependencies.** Not "does not use a database client" — it has no
+  `dependencies` block at all. No import in `src/` resolves outside `src/`.
 - **It never loads.** The host assigns `.bugs`, an array it already has.
 - **It never saves.** Every action dispatches a `CustomEvent` and stops.
 - **It never opens a network connection.** No `fetch`, no `XMLHttpRequest`, no
   `WebSocket`, no `sendBeacon`.
 
-All five of those are asserted by `npm test` against the source text of every
-file in `src/`, so the boundary is a failing build rather than a broken promise.
-The only code in either repo that names a Firestore collection is that app's own
-adapter — `src/data/bugStore.js` in RabbiMetrics, `Store` in Shamash — and
-neither of those moved here.
+All five are asserted by `npm test` against the source text of every file in
+`src/`, so the boundary is a failing build rather than a promise. The only code
+that names a collection is each host's own storage adapter, which did not move
+here.
 
-Two apps' logs therefore cannot bleed into each other: nothing in this package
+Two hosts' logs therefore cannot bleed into each other: nothing in this package
 knows either one exists.
 
 ## Using it
 
-The host must already have `@material/web` registered — this package uses the
-`md-*` tags but deliberately does not import them, because two copies of
-`@material/web` in one page would try to define the same custom elements twice
+The host must already have `@material/web` registered. This package uses the
+`md-*` tags but deliberately does not import them — two copies of
+`@material/web` on one page would try to define the same custom elements twice
 and throw.
 
 ```js
@@ -86,9 +84,8 @@ what was typed.
 
 ### Config
 
-Everything is optional. Anything left out is simply off — the defaults are
-RabbiMetrics's panel, and each flag below is a Shamash feature the smaller app
-deliberately does not have.
+Everything is optional, and anything left out is simply off. The defaults are
+the smaller of the two panels; each flag below is a feature the larger one has.
 
 | Key | Type | Effect |
 |---|---|---|
@@ -120,8 +117,7 @@ obviously wrong rather than silently blank.
 
 ## The conventions this encodes
 
-These are the rules that used to live only in `BUGLOG-DESIGN.md`, each one
-because one app hit the problem first:
+Each of these exists because one app hit the problem first:
 
 1. **A ticket id belongs on every hand-off line.** A note, a resolve and a
    status change all address one document by id. A list without ids forces the
@@ -140,9 +136,9 @@ because one app hit the problem first:
 ## Development
 
 ```sh
-npm test        # 105 assertions, plain node, no build and no browser
+npm test        # plain node, no build and no browser
 ```
 
-Consumed by both apps as a git submodule. After changing anything here, bump
-the pointer in each consumer and run that app's own checks — a submodule is a
-pinned commit, so neither app moves until you move it.
+Consumed as a git submodule. After changing anything here, bump the pointer in
+each consumer and run that app's own checks — a submodule is a pinned commit,
+so no consumer moves until you move it.

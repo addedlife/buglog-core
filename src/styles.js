@@ -8,8 +8,8 @@
 //     dark, either app's seed — reaches in and the panel follows a theme toggle
 //     with no code on either side. There is not one literal colour below except
 //     the two shadow rgba()s, which are M3's own elevation shadow.
-//   • TYPE is declared here rather than borrowed from a host class. RabbiMetrics
-//     has `md-typescale-*` globally and Shamash has its own token file; neither
+//   • TYPE is declared here rather than borrowed from a host class. One host has
+//     `md-typescale-*` globally and the other has its own token file; neither
 //     reaches into a shadow root, so the panel carries the M3 values itself and
 //     reads identically in both.
 //
