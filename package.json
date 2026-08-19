@@ -1,0 +1,21 @@
+{
+  "name": "@addedlife/buglog-core",
+  "version": "1.0.0",
+  "description": "The shared buglog panel — one implementation, two apps, no shared data.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./notes": "./src/notes.js",
+    "./model": "./src/model.js",
+    "./handoff": "./src/handoff.js",
+    "./panel": "./src/panel.js"
+  },
+  "files": ["src"],
+  "scripts": {
+    "test": "node test/run.mjs"
+  },
+  "keywords": ["buglog", "web-component", "material"],
+  "license": "UNLICENSED",
+  "private": true
+}
