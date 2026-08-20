@@ -29,11 +29,9 @@ export const PANEL_CSS = `
   /* WHERE THIS SITS IN THE HOST'S STACK IS THE HOST'S CALL, and getting it
      wrong makes the panel look broken rather than misplaced: it opens, and is
      painted over by the app's own chrome, so nothing appears to happen.
-     That is exactly what a hardcoded value did here — 50 is a sane default for
-     an app whose whole scale is two digits, and it buried the panel under a
-     host whose navigation rail sits at 8600. Every host with a stacking scale
-     of its own must set --buglog-z above its topmost chrome. */
-  z-index: var(--buglog-z, 50);
+     The high fallback keeps this utility above ordinary app chrome. A host
+     with a documented overlay scale can still set --buglog-z explicitly. */
+  z-index: var(--buglog-z, 2147483000);
   pointer-events: none;
   font-family: Roboto, system-ui, sans-serif;
   color: var(--md-sys-color-on-surface);
@@ -41,21 +39,92 @@ export const PANEL_CSS = `
 :host([hidden]) { display: none; }
 .fab, .panel { pointer-events: auto; }
 
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
+.buglog-symbol {
+  font: 600 12px/1 Roboto, system-ui, sans-serif;
   line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
 }
+
+/* Native fallbacks keep the panel usable in a host that has not registered
+   @material/web. They apply only to elements created by panel.js as fallbacks. */
+.md-fallback {
+  box-sizing: border-box;
+  margin: 0;
+  font: 500 13px/20px Roboto, system-ui, sans-serif;
+  letter-spacing: 0;
+  color: var(--md-sys-color-on-surface);
+}
+.md-fallback--text-button,
+.md-fallback--filled-button,
+.md-fallback--filter-chip,
+.md-fallback--icon-button,
+.md-fallback--fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.md-fallback--filled-button,
+.md-fallback--fab {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: transparent;
+}
+.md-fallback--icon-button {
+  width: 32px;
+  padding: 0;
+}
+.md-fallback--outlined-text-field,
+.md-fallback--outlined-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  resize: vertical;
+}
+.md-fallback--outlined-select { width: auto; min-width: 130px; resize: none; }
+.md-fallback--chip-set { display: flex; flex-wrap: wrap; gap: 8px; }
+.md-fallback--divider { width: 100%; border: 0; border-top: 1px solid var(--md-sys-color-outline-variant); }
+.md-fallback--menu {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  z-index: 2;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+}
+.md-fallback--menu[hidden] { display: none; }
+.md-fallback--menu-item,
+.md-fallback--list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.md-fallback:disabled { opacity: .45; cursor: default; }
 
 /* ── FAB ──────────────────────────────────────────────────────────────────
    Rests at low opacity so it never competes with the page it floats over,
@@ -171,7 +240,7 @@ export const PANEL_CSS = `
   font: 400 12px/1.5 Roboto, system-ui, sans-serif;
   letter-spacing: .4px;
 }
-.banner .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+.banner .buglog-symbol { flex-shrink: 0; }
 .banner--error {
   background: color-mix(in srgb, var(--md-sys-color-error) 14%, var(--md-sys-color-surface-container));
   cursor: pointer;

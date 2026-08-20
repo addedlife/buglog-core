@@ -45,10 +45,9 @@ knows either one exists.
 
 ## Using it
 
-The host must already have `@material/web` registered. This package uses the
-`md-*` tags but deliberately does not import them — two copies of
-`@material/web` on one page would try to define the same custom elements twice
-and throw.
+The panel uses `@material/web` when the host has registered it. When a host has
+not, the panel renders compact native controls so capture and triage still work
+without loading a second component runtime.
 
 ```js
 import { defineBuglogPanel } from '@addedlife/buglog-core';
@@ -108,15 +107,11 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 ### Stacking — set this, or the panel looks broken
 
 ```css
-buglog-panel { --buglog-z: 9500; }   /* above your topmost chrome */
+buglog-panel { --buglog-z: 9500; }   /* optional host-specific override */
 ```
 
-The panel is a fixed overlay and defaults to `z-index: 50`, which suits an app
-whose whole scale is two digits. **A host with a taller scale must raise it.**
-Getting this wrong does not look like a misplaced panel — the panel opens
-normally and is painted over by the app's own chrome, so nothing appears to
-happen at all. That is a real failure this package shipped once, against a host
-whose navigation rail sits at 8600.
+The panel is a fixed overlay and defaults near the top of the browser stacking
+range. A host may override the value when it has a documented overlay scale.
 
 ### Theming
 

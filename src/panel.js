@@ -48,11 +48,35 @@ import {
 import { OWNER, noteAuthor, noteKey, appendNote, threadNotes, awaitingCoder } from './notes.js';
 import { copyForTeam, runBrief } from './handoff.js';
 
+const FALLBACK_TAGS = {
+  'md-fab': 'button',
+  'md-filled-button': 'button',
+  'md-text-button': 'button',
+  'md-icon-button': 'button',
+  'md-filter-chip': 'button',
+  'md-outlined-text-field': 'textarea',
+  'md-outlined-select': 'select',
+  'md-select-option': 'option',
+  'md-chip-set': 'div',
+  'md-divider': 'hr',
+  'md-list': 'div',
+  'md-list-item': 'button',
+  'md-menu': 'div',
+  'md-menu-item': 'button',
+};
+
 const el = (tag, props = {}, ...kids) => {
-  const n = document.createElement(tag);
+  const materialReady = !tag.startsWith('md-') || !!customElements.get(tag);
+  const actualTag = materialReady ? tag : (FALLBACK_TAGS[tag] || tag);
+  const n = document.createElement(actualTag);
+  if (!materialReady) {
+    n.classList.add('md-fallback', `md-fallback--${tag.slice(3)}`);
+    if (tag === 'md-outlined-text-field' && props.label) n.placeholder = props.label;
+    if (tag === 'md-filter-chip' && props.label) n.textContent = props.label;
+  }
   for (const [k, v] of Object.entries(props)) {
     if (v == null || v === false) continue;
-    if (k === 'class') n.className = v;
+    if (k === 'class') n.className = `${v}${materialReady ? '' : ` md-fallback md-fallback--${tag.slice(3)}`}`;
     else if (k === 'text') n.textContent = v;
     else if (k === 'style') n.setAttribute('style', v);
     else if (k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v);
@@ -63,8 +87,15 @@ const el = (tag, props = {}, ...kids) => {
   return n;
 };
 
+const SYMBOLS = {
+  bug_report: '!', close: 'x', error: '!', mark_email_read: 'ok',
+  add_photo_alternate: '+', stop_circle: 'stop', mic: 'mic',
+  person_raised_hand: 'user', lightbulb: 'i', more_vert: '...',
+  edit: 'edit', delete: 'x', reply: 'reply', check_circle: 'ok',
+  pause_circle: 'pause', content_copy: 'copy', rocket_launch: 'run',
+};
 const sym = (name, cls = '') =>
-  el('span', { class: `material-symbols-outlined ${cls}`.trim(), text: name });
+  el('span', { class: `buglog-symbol ${cls}`.trim(), text: SYMBOLS[name] || name });
 
 const stop = (e) => e.stopPropagation();
 
@@ -704,7 +735,13 @@ export class BuglogPanel extends HTMLElement {
   #renderMenu(b) {
     const btn = el('md-icon-button', { ariaLabel: 'Ticket actions' }, sym('more_vert'));
     const menu = el('md-menu', { positioning: 'popover' });
-    btn.addEventListener('click', () => { menu.anchorElement = btn; menu.open = !menu.open; });
+    const nativeFallback = menu.classList.contains('md-fallback');
+    if (nativeFallback) menu.hidden = true;
+    btn.addEventListener('click', () => {
+      menu.anchorElement = btn;
+      menu.open = !menu.open;
+      if (nativeFallback) menu.hidden = !menu.open;
+    });
 
     const mi = (icon, label, onPick, danger = false) => {
       const item = el('md-menu-item', { class: danger ? 'menu__danger' : '', onclick: onPick });
