@@ -87,15 +87,8 @@ const el = (tag, props = {}, ...kids) => {
   return n;
 };
 
-const SYMBOLS = {
-  bug_report: '!', close: 'x', error: '!', mark_email_read: 'ok',
-  add_photo_alternate: '+', stop_circle: 'stop', mic: 'mic',
-  person_raised_hand: 'user', lightbulb: 'i', more_vert: '...',
-  edit: 'edit', delete: 'x', reply: 'reply', check_circle: 'ok',
-  pause_circle: 'pause', content_copy: 'copy', rocket_launch: 'run',
-};
 const sym = (name, cls = '') =>
-  el('span', { class: `buglog-symbol ${cls}`.trim(), text: SYMBOLS[name] || name });
+  el('span', { class: `buglog-symbol ${cls}`.trim(), text: name });
 
 const stop = (e) => e.stopPropagation();
 

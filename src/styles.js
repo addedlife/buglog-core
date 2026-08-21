@@ -40,14 +40,20 @@ export const PANEL_CSS = `
 .fab, .panel { pointer-events: auto; }
 
 .buglog-symbol {
-  font: 600 12px/1 Roboto, system-ui, sans-serif;
+  font-family: var(--buglog-symbol-font, 'Material Symbols Outlined');
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
   line-height: 1;
-  letter-spacing: 0;
-  text-transform: lowercase;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
   white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Native fallbacks keep the panel usable in a host that has not registered
@@ -131,8 +137,9 @@ export const PANEL_CSS = `
    and comes to full strength on hover or keyboard focus. */
 .fab {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  left: var(--buglog-fab-left, auto);
+  right: var(--buglog-fab-right, 20px);
+  bottom: var(--buglog-fab-bottom, 20px);
   opacity: .55;
   transition: opacity .18s ease;
 }
@@ -160,8 +167,10 @@ export const PANEL_CSS = `
    scheme roles directly. */
 .panel {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  left: var(--buglog-panel-left, auto);
+  right: var(--buglog-panel-right, 16px);
+  top: var(--buglog-panel-top, auto);
+  bottom: var(--buglog-panel-bottom, 16px);
   display: flex;
   flex-direction: column;
   width: min(400px, calc(100vw - 32px));

@@ -82,6 +82,16 @@ console.log('\n── Stacking: the host owns it ──────────�
 
 console.log('\n── Notes: authorship ──────────────────────────────────────────');
 
+{
+  const panel = readFileSync(join(SRC, 'panel.js'), 'utf8');
+  const css = readFileSync(join(SRC, 'styles.js'), 'utf8');
+  ok('icons keep their Material Symbol ligature names', /text:\s*name/.test(panel));
+  ok('icons do not degrade into punctuation or words', !/const SYMBOLS\s*=/.test(panel));
+  ok('the host can select its Material Symbol family', /--buglog-symbol-font/.test(css));
+  ok('the host can anchor the panel at its leading rail', /--buglog-panel-left/.test(css));
+  ok('the host can anchor the fallback launcher on the left', /--buglog-fab-left/.test(css));
+}
+
 eq('a note with no marks is the coding side', noteAuthor({ text: 'x' }), CODER);
 eq('by:owner is the owner', noteAuthor({ text: 'x', by: OWNER }), OWNER);
 eq("Shamash's from:reporter is the owner's side", noteAuthor({ text: 'x', from: 'reporter' }), OWNER);
