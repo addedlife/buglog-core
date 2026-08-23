@@ -115,6 +115,11 @@ console.log('\n── The text fields keep their drag-to-grow corner ───�
   ok('the plain fallback still resizes on its own', /resize:\s*vertical/.test(css));
 }
 
+ok('a pass that answers about nothing is treated as a failed pass',
+  /if \(!answered\) for \(const b of pending\) this\.#summarized\.delete/.test(
+    readFileSync(join(SRC, 'panel.js'), 'utf8'),
+  ));
+
 console.log('\n── A partial save is reported, not swallowed ──────────────────');
 
 // Owner ticket Cpqn1e4RkgV9MfFx6zZZ: a ticket whose whole text was a caption

@@ -281,19 +281,32 @@ export class BuglogPanel extends HTMLElement {
       .slice(0, 12);
     if (!pending.length) return;
     for (const b of pending) this.#summarized.add(b.id);
+    // A failed pass un-marks its ids so an entry written during an outage is not
+    // stuck without a summary forever. Display falls back to truncation, so
+    // nothing is blocked either way.
+    //
+    // NOTHING BACK COUNTS AS FAILURE. A host summariser that cannot reach its
+    // gateway — signed out, offline, a cold load where auth has not resolved —
+    // returns an empty list rather than throwing, and marking those ids as done
+    // meant an entry filed in that window never got a summary for the life of
+    // the session. A pass that answers about at least one ticket is a working
+    // pass, and the ids it declined to summarise stay marked: retrying a row
+    // the model has already passed on, on every snapshot, is a loop.
+    let answered = 0;
     try {
       const out = await summarize(
         pending.map((b) => ({ id: b.id, kind: b.type === 'idea' ? 'upgrade idea' : 'bug report', source: b.text })),
       );
       for (const row of Array.isArray(out) ? out : []) {
-        if (row?.id && row?.summary) this.#send('update', { id: row.id, patch: { summary: row.summary } });
+        if (row?.id && row?.summary) {
+          answered += 1;
+          this.#send('update', { id: row.id, patch: { summary: row.summary } });
+        }
       }
     } catch {
-      // A failed pass un-marks its ids so an entry written during an outage is
-      // not stuck without a summary forever. Display falls back to truncation,
-      // so nothing is blocked either way.
-      for (const b of pending) this.#summarized.delete(b.id);
+      answered = 0;
     }
+    if (!answered) for (const b of pending) this.#summarized.delete(b.id);
   }
 
   /* ── Dictation (host supplies the recognizer) ─────────────────────────── */
