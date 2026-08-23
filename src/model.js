@@ -57,16 +57,43 @@ export function matchesFilter(bug, filter) {
 }
 
 /**
+ * How much of an entry a collapsed row shows. Exported because the summariser
+ * is aimed at exactly this number — see `needsSummary` below.
+ */
+export const TRUNCATE_AT = 80;
+
+/** One line, no runs of whitespace. What a row is measured and drawn against. */
+const oneLine = (text = '') => String(text).trim().replace(/\s+/g, ' ');
+
+/**
  * Display fallback for a long entry: first sentence, capped. The stored text is
  * NEVER touched — truncation is display-only, and tapping the row shows it in
  * full. An AI summary, where a host provides one, is preferred over this.
  */
 export function truncate(text = '') {
-  const t = String(text).trim().replace(/\s+/g, ' ');
-  if (t.length <= 80) return t;
-  const stop = t.slice(0, 80).lastIndexOf('. ');
-  return stop > 30 ? t.slice(0, stop + 1) : `${t.slice(0, 77)}…`;
+  const t = oneLine(text);
+  if (t.length <= TRUNCATE_AT) return t;
+  const stop = t.slice(0, TRUNCATE_AT).lastIndexOf('. ');
+  return stop > 30 ? t.slice(0, stop + 1) : `${t.slice(0, TRUNCATE_AT - 3)}…`;
 }
+
+/**
+ * Whether a ticket should be sent to the host's summariser.
+ *
+ * The answer is simply "would this row be shown cut off" — which is what a
+ * summary is FOR. Owner ticket S3tDR2qgTmiYEbOPsLZP ("buglog does not seem to
+ * be autosummarizing entries anymore"): the summariser used to have its own
+ * threshold, a raw length over 90, while the display cut at 80. Everything
+ * between the two was guaranteed to appear chopped off mid-word and could
+ * never earn a summary, and four tickets filed in one afternoon landed in that
+ * band. Asking truncate() itself removes the second number rather than
+ * choosing a better one, so the two cannot drift apart again.
+ */
+export const needsSummary = (bug) => {
+  if (bug?.summary) return false;
+  const t = oneLine(bug?.text || '');
+  return t.length > 0 && truncate(t) !== t;
+};
 
 /** What a list row shows before it is expanded. */
 export const displayText = (bug) => bug?.summary || truncate(bug?.text || '');

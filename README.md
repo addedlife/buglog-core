@@ -81,6 +81,12 @@ panel.addEventListener('buglog:delete', (e) => myStore.remove(e.detail.id));
 awaits it before clearing the composer, so a slow or failed write never eats
 what was typed.
 
+Rejecting means the write failed and the draft stays put. Resolving with
+`{ warning: '…' }` means a PARTIAL save — the ticket landed but something that
+was meant to travel with it, an attachment that would not upload, did not — and
+the panel shows the warning instead of reporting a clean save the host already
+knows was not clean.
+
 ### Config
 
 Everything is optional, and anything left out is simply off. The defaults are
@@ -97,7 +103,7 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 | `sequence` | boolean | Lifetime + open sequence numbers on each row. |
 | `reporters` | boolean | Show who filed a ticket, and include it in the paste. |
 | `attachments` | boolean | Screenshot paste/picker on the composer, thumbnails on the row. |
-| `summarize` | `(items) => Promise<[{id, summary}]>` | Long entries get an AI display summary. Stored text is never rewritten. |
+| `summarize` | `(items) => Promise<[{id, summary}]>` | An entry the row would show cut off gets an AI display summary. Stored text is never rewritten. The panel decides who is sent, by asking whether `truncate()` would shorten the row, so a host summariser must not apply a length threshold of its own — that is what left a dead band before. |
 | `startDictation` | `({onPartial,onFinal,onError,onEnd}) => session` | Shows the mic. |
 | `cleanTranscript` | `(text) => Promise<string>` | Post-pass over a finished transcript. |
 | `verification` | `{ options: [{id,label,blurb}], proven: [id] }` | Resolving also asks how the fix was proven. |

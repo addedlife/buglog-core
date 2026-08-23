@@ -38,12 +38,18 @@
 // `buglog:add` and `buglog:update` may be answered: set `detail.result` to a
 // promise and the panel will await it before clearing the composer or closing
 // an editor, so a slow or failed write never silently eats what was typed.
+//
+// A rejection means the write failed and the draft is kept. Resolving with
+// `{ warning: '…' }` means the opposite of that and is worth having: the write
+// SUCCEEDED but something that travelled with it did not — an attachment that
+// would not upload — and the panel shows the warning rather than reporting a
+// clean save the host knows was not clean.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { PANEL_CSS } from './styles.js';
 import {
   TYPES, STATUSES, typeOf, statusOf, filtersFor, matchesFilter,
-  displayText, formatRel, sequenceNumbers,
+  displayText, formatRel, sequenceNumbers, needsSummary,
 } from './model.js';
 import { OWNER, noteAuthor, noteKey, appendNote, threadNotes, awaitingCoder } from './notes.js';
 import { copyForTeam, runBrief } from './handoff.js';
@@ -91,6 +97,48 @@ const sym = (name, cls = '') =>
   el('span', { class: `buglog-symbol ${cls}`.trim(), text: name });
 
 const stop = (e) => e.stopPropagation();
+
+// ─── The drag-to-grow corner on a Material text field ────────────────────────
+//
+// Owner tickets PlSkCXTy5mSlJwPyEx6x and t86ignvazf1ZbS8HaMHN, both "what
+// happened to my expanded textbox option".
+//
+// The plain <textarea> fallback below gets `resize: vertical` from this
+// package's own stylesheet, which is why a host with no Material loaded never
+// lost the grabber. A host that DOES load @material/web gets
+// md-outlined-text-field instead — and @material/web 2.4.1 ships a broken
+// stylesheet: their SCSS says `resize: both` on the host and `resize: inherit`
+// on the field, with a comment in _shared.scss explaining the intent, but the
+// compiled CSS in textfield/internal/shared-styles.css reads `n:both` and
+// `n:inherit`. `n` is not a CSS property, so the rule is inert and every M3
+// textarea is unresizable.
+//
+// Their intent is put back by adopting a corrected sheet into each field's own
+// shadow root. adoptedStyleSheets is the platform's supported way to style a
+// shadow tree you do not own, it needs no dependency on @material/web, and it
+// is idempotent — the panel rebuilding its list cannot pile up copies.
+//
+// This lives HERE and not in either host: it is the shared panel that chooses
+// to render Material fields, so it owns the consequence. It was written into
+// one app first and that is exactly the drift this package exists to stop.
+let RESIZE_SHEET = null;
+let RESIZE_SHEET_TRIED = false;
+const resizeSheet = () => {
+  if (RESIZE_SHEET_TRIED) return RESIZE_SHEET;
+  RESIZE_SHEET_TRIED = true;
+  try {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(
+      ':host{resize:vertical;overflow:hidden}'
+      + '.text-field,.field{resize:inherit}'
+      + 'textarea.input{resize:inherit}',
+    );
+    RESIZE_SHEET = sheet;
+  } catch {
+    RESIZE_SHEET = null;   // no constructable stylesheets → no grabber, never broken
+  }
+  return RESIZE_SHEET;
+};
 
 export class BuglogPanel extends HTMLElement {
   #bugs = [];
@@ -229,7 +277,7 @@ export class BuglogPanel extends HTMLElement {
     const summarize = this.#config.summarize;
     if (typeof summarize !== 'function') return;
     const pending = this.#bugs
-      .filter((b) => b.id && !b.summary && (b.text || '').trim().length > 90 && !this.#summarized.has(b.id))
+      .filter((b) => b.id && needsSummary(b) && !this.#summarized.has(b.id))
       .slice(0, 12);
     if (!pending.length) return;
     for (const b of pending) this.#summarized.add(b.id);
@@ -262,6 +310,28 @@ export class BuglogPanel extends HTMLElement {
     for (const node of [...this.#root.children]) if (node.tagName !== 'STYLE') node.remove();
     if (!this.#config.railMode) this.#root.append(this.#renderFab());
     if (this.#open) this.#root.append(this.#renderPanel());
+    this.#restoreFieldResize();
+  }
+
+  // A Material field is upgraded asynchronously, so its shadow root can be a
+  // frame or two behind this call — hence the short retry rather than one pass.
+  #restoreFieldResize(tries = 0) {
+    const sheet = resizeSheet();
+    if (!sheet) return;
+    const fields = this.#root.querySelectorAll('md-outlined-text-field[type="textarea"]');
+    let waiting = false;
+    for (const f of fields) {
+      const root = f.shadowRoot;
+      if (!root) { waiting = true; continue; }
+      if (!root.adoptedStyleSheets.includes(sheet)) {
+        root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      }
+    }
+    // ~1s of frames. A cold load can still be waiting on the custom element
+    // definition itself; after that there is genuinely nothing to style.
+    if (waiting && tries < 60 && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => this.#restoreFieldResize(tries + 1));
+    }
   }
 
   #renderFab() {
@@ -535,11 +605,21 @@ export class BuglogPanel extends HTMLElement {
     this.#render();
     const files = this.#draftFiles.map((r) => r.file);
     try {
-      await this.#send('add', { text, type: this.#draftType || 'bug', files });
+      const result = await this.#send('add', { text, type: this.#draftType || 'bug', files });
       this.#draftText = '';
       for (const r of this.#draftFiles) { try { URL.revokeObjectURL(r.previewUrl); } catch { /* already gone */ } }
       this.#draftFiles = [];
       this.#status = '';
+      // A PARTIAL save: the ticket landed, something that was meant to travel
+      // with it did not. Owner ticket Cpqn1e4RkgV9MfFx6zZZ was filed as
+      // "Screenshot of shamash host APK log re update bug entry" and arrived
+      // with no screenshot on it — the upload had failed, the host swallowed
+      // it deliberately (a report without its picture beats no report), and
+      // nothing on screen said so. The ticket then read as a caption for a
+      // picture nobody had. Saying it out loud is the whole fix: the host
+      // resolves its add with { warning } and the panel puts it on the banner.
+      const warning = result && typeof result === 'object' ? result.warning : null;
+      if (warning) this.#banner = { kind: 'error', text: String(warning) };
     } catch {
       this.#status = 'Could not save — still here, try again.';
     } finally {

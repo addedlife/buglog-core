@@ -22,6 +22,7 @@ import {
 } from '../src/notes.js';
 import {
   typeOf, statusOf, filtersFor, matchesFilter, truncate, displayText, sequenceNumbers,
+  needsSummary, TRUNCATE_AT,
 } from '../src/model.js';
 import { copyForTeam, runBrief } from '../src/handoff.js';
 
@@ -90,6 +91,40 @@ console.log('\n── Notes: authorship ─────────────�
   ok('the host can select its Material Symbol family', /--buglog-symbol-font/.test(css));
   ok('the host can anchor the panel at its leading rail', /--buglog-panel-left/.test(css));
   ok('the host can anchor the fallback launcher on the left', /--buglog-fab-left/.test(css));
+}
+
+console.log('\n── The text fields keep their drag-to-grow corner ──────────────');
+
+// Owner tickets PlSkCXTy5mSlJwPyEx6x and t86ignvazf1ZbS8HaMHN. @material/web
+// 2.4.1 compiles `resize: both` to `n:both`, which is not a CSS property, so
+// every M3 textarea is unresizable. The correction was written into ONE host
+// first — precisely the drift this package exists to stop — so it lives here
+// now and both apps get it. The plain-textarea fallback keeps its own rule in
+// the stylesheet, for a host with no Material loaded.
+{
+  const panel = readFileSync(join(SRC, 'panel.js'), 'utf8');
+  const css = readFileSync(join(SRC, 'styles.js'), 'utf8');
+  ok('the panel adopts a stylesheet into the Material fields',
+    /adoptedStyleSheets/.test(panel));
+  ok('and the sheet restores the resize the library broke',
+    /resize:vertical/.test(panel) && /resize:inherit/.test(panel));
+  ok('it targets the textarea fields, not every field',
+    /md-outlined-text-field\[type="textarea"\]/.test(panel));
+  ok('a browser without constructable stylesheets is not broken by it',
+    /catch\s*\{[^}]*RESIZE_SHEET = null/.test(panel));
+  ok('the plain fallback still resizes on its own', /resize:\s*vertical/.test(css));
+}
+
+console.log('\n── A partial save is reported, not swallowed ──────────────────');
+
+// Owner ticket Cpqn1e4RkgV9MfFx6zZZ: a ticket whose whole text was a caption
+// for a screenshot arrived with no screenshot, because the upload failed and
+// the host swallows that failure on purpose. The swallow is right; the silence
+// was not.
+{
+  const panel = readFileSync(join(SRC, 'panel.js'), 'utf8');
+  ok('the panel reads a warning off a successful add', /result\.warning/.test(panel));
+  ok('and puts it on the banner', /banner = \{ kind: 'error', text: String\(warning\)/.test(panel));
 }
 
 eq('a note with no marks is the coding side', noteAuthor({ text: 'x' }), CODER);
@@ -174,6 +209,32 @@ ok('long text is cut', truncate('x'.repeat(200)).length <= 81);
 ok('a sentence boundary is preferred', truncate(`${'a'.repeat(40)}. ${'b'.repeat(60)}`).endsWith('.'));
 eq('an AI summary wins over truncation',
   displayText({ text: 'x'.repeat(200), summary: 'the short version' }), 'the short version');
+
+console.log('\n── Model: what earns a summary ────────────────────────────────');
+
+// Owner ticket S3tDR2qgTmiYEbOPsLZP. The summariser had its own threshold —
+// raw length over 90 — while the display cut at 80, so an entry of 81 to 89
+// characters was ALWAYS shown chopped and could never earn a summary. Four
+// tickets filed in one afternoon landed in that band, which from outside reads
+// as the summariser having stopped working. The rule is now the display's own
+// question, so the band cannot exist.
+ok('a row that fits is not sent', !needsSummary({ text: 'x'.repeat(TRUNCATE_AT) }));
+ok('a row one character too long IS sent', needsSummary({ text: 'x'.repeat(TRUNCATE_AT + 1) }));
+for (const n of [81, 85, 89, 90]) {
+  ok(`the old dead band is closed at ${n} characters`, needsSummary({ text: 'x'.repeat(n) }));
+}
+ok('a row already carrying a summary is not sent again',
+  !needsSummary({ text: 'x'.repeat(200), summary: 'done' }));
+ok('an empty ticket is not sent', !needsSummary({ text: '   ' }));
+ok('nothing at all is not sent', !needsSummary(undefined));
+// Wrapped text measures as the single line it is drawn as, not as its source.
+ok('a short entry full of newlines is not sent',
+  !needsSummary({ text: 'one\n\n\ntwo\n\n\nthree' }));
+ok('everything sent to the summariser would otherwise be shown cut off',
+  [90, 120, 400].every((n) => {
+    const text = 'x'.repeat(n);
+    return needsSummary({ text }) && truncate(text) !== text;
+  }));
 
 const seq = sequenceNumbers([
   { id: 'c', status: 'unresolved' },
