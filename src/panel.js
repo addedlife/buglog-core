@@ -435,6 +435,19 @@ export class BuglogPanel extends HTMLElement {
     return panel;
   }
 
+  /**
+   * Put a line across the top of the panel, or clear it with no text.
+   *
+   * The one way anything outside the panel can say something on it. A save can
+   * report a partial result through its own return value, but a launch that
+   * fails a second and a half later has no return value to ride on — see the
+   * buglog run button in the host (owner ticket 3aVBXcUXyt9GMXBbyPVa).
+   */
+  showBanner(text, kind = 'error') {
+    this.#banner = text ? { kind, text: String(text) } : null;
+    this.#render();
+  }
+
   #renderBanner() {
     const { kind, text } = this.#banner;
     return el(
