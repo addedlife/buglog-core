@@ -73,7 +73,12 @@ const FALLBACK_TAGS = {
 
 const el = (tag, props = {}, ...kids) => {
   const materialReady = !tag.startsWith('md-') || !!customElements.get(tag);
-  const actualTag = materialReady ? tag : (FALLBACK_TAGS[tag] || tag);
+  // Same reason as the expanded row above: a non-button list item must not
+  // fall back to a <button>, or the reply box inside it is unusable.
+  const fallbackTag = tag === 'md-list-item' && props.type && props.type !== 'button'
+    ? 'div'
+    : (FALLBACK_TAGS[tag] || tag);
+  const actualTag = materialReady ? tag : fallbackTag;
   const n = document.createElement(actualTag);
   if (!materialReady) {
     n.classList.add('md-fallback', `md-fallback--${tag.slice(3)}`);
@@ -320,9 +325,18 @@ export class BuglogPanel extends HTMLElement {
 
   #render() {
     if (!this.isConnected) return;
+    // The whole panel is rebuilt on every state change and the scrolling
+    // element goes with it, so the offset is carried across by hand. Without
+    // this, opening a ticket halfway down the list drops you back at the top
+    // and you have to find it again.
+    const keep = this.#root.querySelector('.panel__body')?.scrollTop || 0;
     for (const node of [...this.#root.children]) if (node.tagName !== 'STYLE') node.remove();
     if (!this.#config.railMode) this.#root.append(this.#renderFab());
     if (this.#open) this.#root.append(this.#renderPanel());
+    if (keep) {
+      const body = this.#root.querySelector('.panel__body');
+      if (body) body.scrollTop = keep;
+    }
     this.#restoreFieldResize();
   }
 
@@ -688,8 +702,13 @@ export class BuglogPanel extends HTMLElement {
     const notes = Array.isArray(b.notes) ? b.notes : [];
     const fromUser = b.source === 'user';
 
+    // A collapsed row is a button, because its whole job is "open me". An
+    // expanded one is not: the reply box lives inside the row, and a text
+    // field nested in a <button> never gets the caret — the button ancestor
+    // takes the click, so keystrokes land on the row instead of in the box
+    // and the space bar activates the row rather than typing a space.
     const item = el('md-list-item', {
-      type: 'button',
+      type: expanded ? 'text' : 'button',
       title: expanded ? null : b.text,
       onclick: () => { this.#expandedId = expanded ? null : b.id; this.#render(); },
     });
@@ -950,7 +969,18 @@ export class BuglogPanel extends HTMLElement {
         el('md-filled-button', { text: wasResolved ? 'Reply & reopen' : 'Reply', onclick: commit }),
       ),
     );
-    requestAnimationFrame(() => field.focus?.());
+    // The custom element may not have upgraded on the frame the row rebuilds,
+    // and focus() on a not-yet-upgraded element is a no-op that leaves the
+    // caret nowhere. Retry until it takes, for about a second.
+    const grab = (tries = 0) => {
+      field.focus?.();
+      const got = this.#root.activeElement === field;
+      if (!got && tries < 60 && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => grab(tries + 1));
+      }
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => grab());
+    else field.focus?.();
     return box;
   }
 
