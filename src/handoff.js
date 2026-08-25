@@ -25,21 +25,56 @@ function reporterOf(bug) {
 }
 
 /**
+ * Where the queue lives and what a finished ticket looks like: the orientation
+ * a session would otherwise burn its first thousand tokens rediscovering.
+ *
+ * Both hand-offs emit this, from here, so a paste can never be the cheap one
+ * that leaves the session guessing. Hosts supply the lines — they are the parts
+ * that genuinely differ between two repos.
+ *
+ * @param {{where?: string[], gate?: string[]}} opts
+ */
+function orientation({ where = [], gate = [] } = {}) {
+  const L = [];
+  if (where.length) {
+    L.push('', 'WHERE THE TICKETS LIVE', ...where.map((l) => `  ${l}`));
+    L.push('  `notes` is an array: a raw write REPLACES it. Append, never overwrite.');
+  }
+  if (gate.length) {
+    L.push('', 'WHAT A FINISHED TICKET LOOKS LIKE', ...gate.map((l) => `  ${l}`));
+  }
+  return L;
+}
+
+/**
  * The open queue as a list a human pastes to a coding session.
  *
  * @param {object[]} bugs        the whole log, newest first
- * @param {{productName: string, includeReporter?: boolean}} opts
+ * @param {{
+ *   productName: string, includeReporter?: boolean, appVersion?: string,
+ *   repo?: string, where?: string[], gate?: string[],
+ * }} opts
  */
-export function copyForTeam(bugs, { productName = 'this app', includeReporter = false } = {}) {
+export function copyForTeam(bugs, opts = {}) {
+  const {
+    productName = 'this app', includeReporter = false, appVersion = '', repo = '',
+    where = [], gate = [],
+  } = opts;
   const open = (Array.isArray(bugs) ? bugs : []).filter(
     (b) => (b.status || 'unresolved') === 'unresolved',
   );
-  const lines = [`Unresolved tickets — ${productName}`];
+  const lines = [
+    `Unresolved tickets — ${productName}` +
+      `${repo ? ` (repo: ${repo}` : ''}${repo && appVersion ? `, currently v${appVersion}` : ''}${repo ? ')' : ''}`,
+  ];
   if (!open.length) {
     lines.push('', '(none — all clear)');
     return lines.join('\n');
   }
+  lines.push(...orientation({ where, gate }));
   lines.push(
+    '',
+    'THE OPEN QUEUE',
     'The code in brackets is the ticket id. Use it to write notes and resolve —',
     'no need to fetch the list again.',
     '',
@@ -93,13 +128,7 @@ export function runBrief(bugs, opts = {}) {
   );
   L.push('');
   L.push('Everything you need is below — do not go looking for a key or grep for the queue.');
-  if (where.length) {
-    L.push('', 'WHERE THE TICKETS LIVE', ...where.map((l) => `  ${l}`));
-    L.push('  `notes` is an array: a raw write REPLACES it. Append, never overwrite.');
-  }
-  if (gate.length) {
-    L.push('', 'WHAT A FINISHED TICKET LOOKS LIKE', ...gate.map((l) => `  ${l}`));
-  }
+  L.push(...orientation({ where, gate }));
   L.push(
     '',
     '  Write the note in PLAIN ENGLISH FIRST — a paragraph the owner can read without',

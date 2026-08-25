@@ -273,6 +273,21 @@ const replied = copyForTeam(
 );
 ok('an unanswered reply travels with its ticket', replied.includes('no you did not'));
 
+// The paste has to stand on its own: whoever reads it must not have to go
+// looking for the queue or the gate, which is what makes it expensive.
+const pasteOriented = copyForTeam(queue, {
+  productName: 'Test App',
+  appVersion: '1.0.0',
+  repo: 'someone/thing',
+  where: ['the tickets are at some/path'],
+  gate: ['run the checks'],
+});
+ok('the paste names the repo', pasteOriented.includes('someone/thing'));
+ok('the paste carries where they live', pasteOriented.includes('some/path'));
+ok('the paste carries the release gate', pasteOriented.includes('run the checks'));
+ok('the paste warns that notes replace', /notes.*REPLACES|REPLACES.*notes/is.test(pasteOriented));
+ok('the paste still carries the ids', pasteOriented.includes('[abc123]'));
+
 const brief = runBrief(queue, {
   productName: 'Test App',
   appVersion: '1.0.0',

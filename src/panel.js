@@ -1148,9 +1148,15 @@ export class BuglogPanel extends HTMLElement {
     const copy = el('md-text-button', {
       disabled: n === 0,
       onclick: () => {
+        // The same orientation the run brief carries: where the queue lives and
+        // what a finished ticket looks like. A paste without it makes whoever
+        // reads it rediscover the paths, which is the token burn the owner
+        // filed this against.
         const text = copyForTeam(this.#bugs, {
           productName: this.#config.productName || 'this app',
+          appVersion: this.#config.appVersion || '',
           includeReporter: !!this.#config.reporters,
+          ...(this.#config.runBrief || {}),
         });
         navigator.clipboard?.writeText(text).catch(() => {});
         this.#copied = true;
