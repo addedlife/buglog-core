@@ -300,7 +300,7 @@ export class BuglogPanel extends HTMLElement {
     let answered = 0;
     try {
       const out = await summarize(
-        pending.map((b) => ({ id: b.id, kind: b.type === 'idea' ? 'upgrade idea' : 'bug report', source: b.text })),
+        pending.map((b) => ({ id: b.id, kind: b.type === 'idea' ? 'feature request' : 'bug report', source: b.text })),
       );
       for (const row of Array.isArray(out) ? out : []) {
         if (row?.id && row?.summary) {
@@ -469,7 +469,7 @@ export class BuglogPanel extends HTMLElement {
     const wrap = el('div', { class: 'add' });
 
     const field = el('md-outlined-text-field', {
-      label: this.#triage ? 'Jot a bug or idea…' : 'Describe what went wrong, or what would help…',
+      label: this.#triage ? 'Jot a bug or feature…' : 'Describe what went wrong, or what would help…',
       value: this.#draftText || '',
       oninput: (e) => { this.#draftText = e.target.value; },
       onkeydown: (e) => {
@@ -563,7 +563,7 @@ export class BuglogPanel extends HTMLElement {
       {
         class: live ? 'mic--live' : '',
         title: live ? 'Stop dictating' : 'Dictate',
-        ariaLabel: 'Dictate a bug or idea',
+        ariaLabel: 'Dictate a bug or feature',
         disabled: this.#dictation?.cleaning === true,
         onclick: () => (live ? this.#stopDictation() : this.#startDictation()),
       },
@@ -894,7 +894,7 @@ export class BuglogPanel extends HTMLElement {
       this.#render();
     }));
     if (this.#triage) {
-      menu.append(mi('swap_horiz', `Make ${b.type === 'bug' ? 'an idea' : 'a bug'}`, () =>
+      menu.append(mi('swap_horiz', `Make ${b.type === 'bug' ? 'a feature' : 'a bug'}`, () =>
         this.#send('update', { id: b.id, patch: { type: b.type === 'bug' ? 'idea' : 'bug' } })));
     }
     menu.append(el('md-divider'));

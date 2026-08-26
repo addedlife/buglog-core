@@ -198,6 +198,12 @@ ok('nor is one with no notes field', !awaitingCoder({}));
 console.log('\n── Model: vocabulary and filters ──────────────────────────────');
 
 eq('an unknown type falls back to bug', typeOf('nonsense').id, 'bug');
+// Owner ticket f912y0ti: the label reads "Feature", the id stays 'idea' so the
+// tickets already filed under it keep their type.
+eq('the second type is labelled Feature', typeOf('idea').label, 'Feature');
+eq('its id is unchanged', typeOf('idea').id, 'idea');
+ok('the type chip reads Features',
+  filtersFor({ triage: true }).some((f) => f.id === 'idea' && f.label === 'Features'));
 eq('an unknown status falls back to unresolved', statusOf(undefined).id, 'unresolved');
 eq('triage sees every status', filtersFor({ triage: true }).length, 7);
 eq('a reporter sees only their own two', filtersFor({ triage: false }).length, 5);

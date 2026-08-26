@@ -6,10 +6,16 @@
 // small ways. It lives here now so a new status or a changed label is one edit.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** What a ticket IS. */
+/**
+ * What a ticket IS.
+ *
+ * The second type is labelled "Feature" (owner ticket f912y0ti). Its id stays
+ * `idea`: every ticket already filed carries that value, and renaming the id
+ * would orphan them.
+ */
 export const TYPES = [
   { id: 'bug', label: 'Bug', icon: 'bug_report', role: 'error' },
-  { id: 'idea', label: 'Upgrade idea', icon: 'lightbulb', role: 'tertiary' },
+  { id: 'idea', label: 'Feature', icon: 'lightbulb', role: 'tertiary' },
 ];
 
 /** Where a ticket STANDS. */
@@ -38,14 +44,14 @@ export function filtersFor({ triage = true } = {}) {
       { id: 'unresolved', label: 'Open' },
       { id: 'resolved', label: 'Fixed' },
       { id: 'bug', label: 'Bugs' },
-      { id: 'idea', label: 'Ideas' },
+      { id: 'idea', label: 'Features' },
     ];
   }
   return [
     { id: 'all', label: 'All' },
     ...STATUSES.map((s) => ({ id: s.id, label: s.id === 'future' ? 'Future' : s.label })),
     { id: 'bug', label: 'Bugs' },
-    { id: 'idea', label: 'Ideas' },
+    { id: 'idea', label: 'Features' },
   ];
 }
 
