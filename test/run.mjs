@@ -16,6 +16,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 import {
   OWNER, CODER, noteAuthor, noteKey, appendNote, threadNotes, awaitingCoder,
@@ -308,6 +309,8 @@ ok('the brief carries the release gate', brief.includes('run the checks'));
 ok('the brief warns that notes replace', /notes.*REPLACES|REPLACES.*notes/is.test(brief));
 ok('an empty queue reads as clear', runBrief([], {}).includes('queue is clear'));
 
+const audioTests = spawnSync(process.execPath, ['--test', join(HERE, 'audio.test.mjs')], { stdio: 'inherit' });
+ok('shared audio tests pass', audioTests.status === 0);
 console.log(
   failures === 0
     ? '\nall checks passed\n'

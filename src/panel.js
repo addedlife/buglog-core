@@ -47,6 +47,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { PANEL_CSS } from './styles.js';
+import { mergeDictation } from './audio.js';
 import {
   TYPES, STATUSES, typeOf, statusOf, filtersFor, matchesFilter,
   displayText, formatRel, sequenceNumbers, needsSummary,
@@ -577,6 +578,7 @@ export class BuglogPanel extends HTMLElement {
     const clean = this.#config.cleanTranscript;
     if (typeof start !== 'function') return;
     const base = (this.#draftText || '').trim();
+    let preview = this.#draftText || '';
     this.#dictation = { session: null, cleaning: false };
     const setText = (t) => {
       this.#draftText = t;
@@ -584,9 +586,13 @@ export class BuglogPanel extends HTMLElement {
     };
     this.#status = 'Listening…';
     const session = start({
-      onPartial: (text) => setText(base ? `${base} ${text}` : text),
+      onPartial: (text) => {
+        if ((this.#draftText || '') !== preview) return;
+        preview = base ? `${base} ${text}` : text;
+        setText(preview);
+      },
       onFinal: async (raw) => {
-        const joined = base ? `${base} ${raw}` : raw;
+        const joined = mergeDictation(this.#draftText || '', base, preview, raw);
         setText(joined);
         if (typeof clean !== 'function') return;
         this.#dictation = { session: null, cleaning: true };

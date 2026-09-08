@@ -9,7 +9,8 @@
     "./notes": "./src/notes.js",
     "./model": "./src/model.js",
     "./handoff": "./src/handoff.js",
-    "./panel": "./src/panel.js"
+    "./panel": "./src/panel.js",
+    "./audio": "./src/audio.js"
   },
   "files": ["src"],
   "scripts": {
