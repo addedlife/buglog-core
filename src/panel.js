@@ -733,7 +733,8 @@ export class BuglogPanel extends HTMLElement {
     });
 
     const lead = sym(fromUser ? 'person_raised_hand' : t.icon,
-      `item__type item__type--${fromUser ? 'user' : t.id}`);
+      `item__type item__type--${fromUser ? 'user' : t.id}` +
+      ((b.status || '') === 'resolved' ? ' item__type--resolved' : ''));
     lead.slot = 'start';
     lead.title = fromUser ? `${t.label} — reported by a user` : t.label;
 

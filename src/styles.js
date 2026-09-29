@@ -7,7 +7,9 @@
 //     inherit THROUGH a shadow boundary, so whatever the host page sets — light,
 //     dark, either app's seed — reaches in and the panel follows a theme toggle
 //     with no code on either side. There is not one literal colour below except
-//     the two shadow rgba()s, which are M3's own elevation shadow.
+//     the two shadow rgba()s, which are M3's own elevation shadow, and the one
+//     green hue in --_bl-resolved: M3 has no success role, and a resolved ticket
+//     reads as done in green rather than in the scheme's primary blue.
 //   • TYPE is declared here rather than borrowed from a host class. One host has
 //     `md-typescale-*` globally and the other has its own token file; neither
 //     reaches into a shadow root, so the panel carries the M3 values itself and
@@ -35,6 +37,12 @@ export const PANEL_CSS = `
   pointer-events: none;
   font-family: Roboto, system-ui, sans-serif;
   color: var(--md-sys-color-on-surface);
+  /* Resolved is a soft green, never a signal green. The hue is mixed into the
+     scheme's own on-surface-variant, so it is dark and muted on a light
+     surface, light and muted on a dark one, and follows a theme toggle. A host
+     can override it with --buglog-color-resolved. */
+  --_bl-resolved: var(--buglog-color-resolved,
+    color-mix(in srgb, #2E7D4F 70%, var(--md-sys-color-on-surface-variant)));
 }
 :host([hidden]) { display: none; }
 .fab, .panel { pointer-events: auto; }
@@ -342,12 +350,13 @@ export const PANEL_CSS = `
 .item__type--bug { color: var(--md-sys-color-error); }
 .item__type--idea { color: var(--md-sys-color-tertiary); }
 .item__type--user { color: var(--md-sys-color-secondary); }
+.item__type.item__type--resolved { color: var(--_bl-resolved); }
 .item__text { white-space: normal; word-break: break-word; }
 .item__meta { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .item__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .item__meta--unresolved { color: var(--md-sys-color-error); }
 .item__meta--paused { color: var(--md-sys-color-on-surface-variant); }
-.item__meta--resolved { color: var(--md-sys-color-primary); }
+.item__meta--resolved { color: var(--_bl-resolved); }
 .item__meta--future { color: var(--md-sys-color-tertiary); }
 .item__when { color: var(--md-sys-color-on-surface-variant); }
 .item__seq {
@@ -358,7 +367,7 @@ export const PANEL_CSS = `
 .item__seq b { color: var(--md-sys-color-on-surface); font-weight: 600; }
 .item__flag { color: var(--md-sys-color-tertiary); }
 .item__flag--warn { color: var(--md-sys-color-error); }
-.item__flag--ok { color: var(--md-sys-color-primary); }
+.item__flag--ok { color: var(--_bl-resolved); }
 .item__who {
   color: var(--md-sys-color-secondary);
   overflow: hidden;
