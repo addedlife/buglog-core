@@ -217,10 +217,12 @@ ok('a type chip matches its type', matchesFilter({ type: 'idea' }, 'idea'));
 ok('a ticket with no status reads as unresolved', matchesFilter({}, 'unresolved'));
 
 eq('short text is left alone', truncate('all good'), 'all good');
-ok('long text is cut', truncate('x'.repeat(200)).length <= 81);
-ok('a sentence boundary is preferred', truncate(`${'a'.repeat(40)}. ${'b'.repeat(60)}`).endsWith('.'));
+ok('long text is cut', truncate('x'.repeat(400)).length <= TRUNCATE_AT + 1);
+ok('a sentence boundary is preferred', truncate(`${'a'.repeat(40)}. ${'b'.repeat(300)}`).endsWith('.'));
 eq('an AI summary wins over truncation',
-  displayText({ text: 'x'.repeat(200), summary: 'the short version' }), 'the short version');
+  displayText({ text: 'x'.repeat(400), summary: 'the short version' }), 'the short version');
+eq('an entry that fits is shown as written, summary or not',
+  displayText({ text: 'a fairly long entry '.repeat(5), summary: 'short' }), 'a fairly long entry '.repeat(5).trim());
 
 console.log('\n── Model: what earns a summary ────────────────────────────────');
 
@@ -232,18 +234,18 @@ console.log('\n── Model: what earns a summary ──────────
 // question, so the band cannot exist.
 ok('a row that fits is not sent', !needsSummary({ text: 'x'.repeat(TRUNCATE_AT) }));
 ok('a row one character too long IS sent', needsSummary({ text: 'x'.repeat(TRUNCATE_AT + 1) }));
-for (const n of [81, 85, 89, 90]) {
+for (const n of [TRUNCATE_AT + 1, TRUNCATE_AT + 5, TRUNCATE_AT + 9, TRUNCATE_AT + 10]) {
   ok(`the old dead band is closed at ${n} characters`, needsSummary({ text: 'x'.repeat(n) }));
 }
 ok('a row already carrying a summary is not sent again',
-  !needsSummary({ text: 'x'.repeat(200), summary: 'done' }));
+  !needsSummary({ text: 'x'.repeat(400), summary: 'done' }));
 ok('an empty ticket is not sent', !needsSummary({ text: '   ' }));
 ok('nothing at all is not sent', !needsSummary(undefined));
 // Wrapped text measures as the single line it is drawn as, not as its source.
 ok('a short entry full of newlines is not sent',
   !needsSummary({ text: 'one\n\n\ntwo\n\n\nthree' }));
 ok('everything sent to the summariser would otherwise be shown cut off',
-  [90, 120, 400].every((n) => {
+  [TRUNCATE_AT + 10, 400, 800].every((n) => {
     const text = 'x'.repeat(n);
     return needsSummary({ text }) && truncate(text) !== text;
   }));

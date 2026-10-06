@@ -351,7 +351,14 @@ export const PANEL_CSS = `
 .item__type--idea { color: var(--md-sys-color-tertiary); }
 .item__type--user { color: var(--md-sys-color-secondary); }
 .item__type.item__type--resolved { color: var(--_bl-resolved); }
-.item__text { white-space: normal; word-break: break-word; }
+.item__text {
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 .item__meta { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .item__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .item__meta--unresolved { color: var(--md-sys-color-error); }

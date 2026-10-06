@@ -66,7 +66,7 @@ export function matchesFilter(bug, filter) {
  * How much of an entry a collapsed row shows. Exported because the summariser
  * is aimed at exactly this number — see `needsSummary` below.
  */
-export const TRUNCATE_AT = 80;
+export const TRUNCATE_AT = 240;
 
 /** One line, no runs of whitespace. What a row is measured and drawn against. */
 const oneLine = (text = '') => String(text).trim().replace(/\s+/g, ' ');
@@ -102,7 +102,13 @@ export const needsSummary = (bug) => {
 };
 
 /** What a list row shows before it is expanded. */
-export const displayText = (bug) => bug?.summary || truncate(bug?.text || '');
+export const displayText = (bug) => {
+  const t = oneLine(bug?.text || '');
+  // An entry that fits is shown as written and wraps up to three lines (owner
+  // ticket W2I8P7HK: rows had gone back to one cut-off line). A summary only
+  // stands in for an entry too long for that.
+  return t.length <= TRUNCATE_AT ? t : (bug?.summary || truncate(t));
+};
 
 export function formatRel(ms) {
   if (!ms) return '';
