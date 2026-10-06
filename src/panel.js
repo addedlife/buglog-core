@@ -475,7 +475,16 @@ export class BuglogPanel extends HTMLElement {
       rows: this.#draftExpanded ? 10 : 2,
       label: this.#triage ? 'Jot a bug or feature…' : 'Describe what went wrong, or what would help…',
       value: this.#draftText || '',
-      oninput: (e) => { this.#draftText = e.target.value; },
+      oninput: (e) => {
+        this.#draftText = e.target.value;
+        // Grows with what is typed, up to ten lines, so text never runs off
+        // one line and hides the rest (owner ticket 7IB1hSoB).
+        const f = e.target;
+        const per = Math.max(20, Math.floor((f.clientWidth || 320) / 8));
+        const lines = String(f.value).split('
+').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / per)), 0);
+        f.rows = this.#draftExpanded ? 10 : Math.min(10, Math.max(2, lines));
+      },
       onkeydown: (e) => {
         stop(e);
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.#submitDraft(); }
