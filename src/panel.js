@@ -152,6 +152,7 @@ export class BuglogPanel extends HTMLElement {
   #open = false;
   #filter = 'all';
   #expandedId = null;
+  #draftExpanded = false;
   #editId = null;
   // Resolving asks for a note first, the same way every command-line portal
   // does. A ticket closed with nothing written on it tells you, a month later,
@@ -470,6 +471,8 @@ export class BuglogPanel extends HTMLElement {
     const wrap = el('div', { class: 'add' });
 
     const field = el('md-outlined-text-field', {
+      type: 'textarea',
+      rows: this.#draftExpanded ? 10 : 2,
       label: this.#triage ? 'Jot a bug or feature…' : 'Describe what went wrong, or what would help…',
       value: this.#draftText || '',
       oninput: (e) => { this.#draftText = e.target.value; },
@@ -514,6 +517,20 @@ export class BuglogPanel extends HTMLElement {
     const controls = el('div', { class: 'add__controls' });
 
     if (typeof cfg.startDictation === 'function') controls.append(this.#renderMic());
+
+    // A visible way to make the entry box taller. The drag corner alone was
+    // not discoverable and did nothing on a touch screen.
+    controls.append(
+      el(
+        'md-icon-button',
+        {
+          title: this.#draftExpanded ? 'Shrink the entry box' : 'Expand the entry box',
+          ariaLabel: this.#draftExpanded ? 'Shrink the entry box' : 'Expand the entry box',
+          onclick: () => { this.#draftExpanded = !this.#draftExpanded; this.#render(); },
+        },
+        sym(this.#draftExpanded ? 'collapse_content' : 'expand_content'),
+      ),
+    );
 
     if (cfg.attachments) {
       const picker = el('input', {
