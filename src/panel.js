@@ -481,8 +481,7 @@ export class BuglogPanel extends HTMLElement {
         // one line and hides the rest (owner ticket 7IB1hSoB).
         const f = e.target;
         const per = Math.max(20, Math.floor((f.clientWidth || 320) / 8));
-        const lines = String(f.value).split('
-').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / per)), 0);
+        const lines = String(f.value).split(String.fromCharCode(10)).reduce((n, l) => n + Math.max(1, Math.ceil(l.length / per)), 0);
         f.rows = this.#draftExpanded ? 10 : Math.min(10, Math.max(2, lines));
       },
       onkeydown: (e) => {
