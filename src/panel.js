@@ -184,6 +184,11 @@ export class BuglogPanel extends HTMLElement {
   #resolveText = '';
   #resolveBtn = null;
   #outside = null;
+  // Where the list was scrolled, kept on the instance rather than read back off
+  // the rebuilt list (see #restoreScroll).
+  #scrollTop = 0;
+  #restoring = false;
+  #restoreToken = 0;
 
   constructor() {
     super();
@@ -331,15 +336,56 @@ export class BuglogPanel extends HTMLElement {
     // element goes with it, so the offset is carried across by hand. Without
     // this, opening a ticket halfway down the list drops you back at the top
     // and you have to find it again.
-    const keep = this.#root.querySelector('.panel__body')?.scrollTop || 0;
+    //
+    // While a restore is still settling, the list on screen is the half-built
+    // one and its offset is the clamped one, so the remembered value stands.
+    const prev = this.#root.querySelector('.panel__body');
+    if (prev && !this.#restoring) this.#scrollTop = prev.scrollTop;
     for (const node of [...this.#root.children]) if (node.tagName !== 'STYLE') node.remove();
     if (!this.#config.railMode) this.#root.append(this.#renderFab());
     if (this.#open) this.#root.append(this.#renderPanel());
-    if (keep) {
-      const body = this.#root.querySelector('.panel__body');
-      if (body) body.scrollTop = keep;
-    }
+    this.#restoreScroll();
     this.#restoreFieldResize();
+  }
+
+  // Setting scrollTop once, straight after the rebuild, was not enough (owner
+  // ticket P0wcgyQ0, still "flashing to top" after 5.45.5). The rows are
+  // Material elements that draw their contents a microtask or a frame later, so
+  // at that moment the new list is nearly empty, the browser clamps the offset
+  // to what fits, and the list sits at the top. A second rebuild inside that
+  // window (a Firestore snapshot, a summary landing, the host resetting config)
+  // then read the clamped 0 as the place to keep, and the place was gone for
+  // good. So the offset lives on the instance, is applied again once every row
+  // has finished drawing and for two frames after, and the user scrolling or
+  // tapping during that settle ends it, since the place is theirs then.
+  #restoreScroll() {
+    const token = ++this.#restoreToken;
+    const body = this.#root.querySelector('.panel__body');
+    const target = this.#scrollTop;
+    if (!body || !target) { this.#restoring = false; return; }
+    this.#restoring = true;
+    const live = () => token === this.#restoreToken && body.isConnected;
+    const apply = () => { if (live()) body.scrollTop = target; };
+    const finish = () => { if (token === this.#restoreToken) this.#restoring = false; };
+    const takeOver = () => {
+      if (token !== this.#restoreToken) return;
+      this.#restoreToken += 1;
+      this.#restoring = false;
+    };
+    for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+      body.addEventListener(type, takeOver, { once: true, passive: true });
+    }
+    const frame = typeof requestAnimationFrame === 'function'
+      ? requestAnimationFrame
+      : (fn) => setTimeout(fn, 16);
+    apply();
+    const drawing = [...body.querySelectorAll('*')]
+      .map((n) => n.updateComplete)
+      .filter((p) => p && typeof p.then === 'function');
+    Promise.all(drawing).catch(() => {}).then(() => {
+      apply();
+      frame(() => { apply(); frame(() => { apply(); finish(); }); });
+    });
   }
 
   // A Material field is upgraded asynchronously, so its shadow root can be a
