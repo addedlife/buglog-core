@@ -25,7 +25,7 @@ import {
   typeOf, statusOf, filtersFor, matchesFilter, truncate, displayText, sequenceNumbers,
   needsSummary, TRUNCATE_AT,
 } from '../src/model.js';
-import { copyForTeam, runBrief } from '../src/handoff.js';
+import { copyForTeam, runBrief, runTargetsOf, resolveRunDefault } from '../src/handoff.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, '..', 'src');
@@ -310,6 +310,15 @@ ok('the brief carries where they live', brief.includes('some/path'));
 ok('the brief carries the release gate', brief.includes('run the checks'));
 ok('the brief warns that notes replace', /notes.*REPLACES|REPLACES.*notes/is.test(brief));
 ok('an empty queue reads as clear', runBrief([], {}).includes('queue is clear'));
+
+// Run targets are opt-in: a host that never sets them keeps the single button.
+eq('no runTargets means no split button', runTargetsOf({}).length, 0);
+eq('a malformed runTargets is ignored', runTargetsOf({ runTargets: 'x' }).length, 0);
+const tgts = runTargetsOf({ runTargets: [{ id: 'a', label: 'A' }, { id: '', label: 'nameless' }, { id: 'b', label: 'B' }, null] });
+eq('only targets with an id and a label survive', tgts.map((t) => t.id).join(','), 'a,b');
+eq('the host default wins when offered', resolveRunDefault(tgts, 'b'), 'b');
+eq('an unknown default falls back to the first target', resolveRunDefault(tgts, 'zzz'), 'a');
+eq('no targets, no default', resolveRunDefault([], 'a'), null);
 
 const audioTests = spawnSync(process.execPath, ['--test', join(HERE, 'audio.test.mjs')], { stdio: 'inherit' });
 ok('shared audio tests pass', audioTests.status === 0);

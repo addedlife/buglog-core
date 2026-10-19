@@ -108,6 +108,9 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 | `cleanTranscript` | `(text) => Promise<string>` | Post-pass over a finished transcript. |
 | `verification` | `{ options: [{id,label,blurb}], proven: [id] }` | Resolving also asks how the fix was proven. |
 | `runBrief` | `{ repo, where[], gate[] }` | Adds "Start buglog run" to the footer. |
+| `runTargets` | `[{ id, label, icon?, hint?, lead? }]` | Opt-in, needs `runBrief`. The run button becomes an M3 split button: the leading half runs the default target (its `lead` is the button text), the trailing half opens a menu of every target with the default checked. `buglog:run` then carries `{ brief, target }`. Picking from the menu never changes the default. Unset: the single button, unchanged. |
+| `runDefault` | string | The target id the leading half runs. Unknown or unset: the first target. |
+| `runDefaultNote` | string | Optional line under the menu, e.g. where the default is changed. |
 | `isNewer` | `(a, b) => boolean` | Version comparison for the `fixedIn` marker. |
 
 ### Stacking — set this, or the panel looks broken

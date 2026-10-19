@@ -164,3 +164,23 @@ export function runBrief(bugs, opts = {}) {
   });
   return L.join('\n');
 }
+
+/**
+ * The run targets a host offered (`config.runTargets`), cleaned: only entries
+ * with an id and a label survive. Empty means "no split button" — the panel
+ * keeps its single Start buglog run button, so a host that never sets this
+ * sees no change at all.
+ *
+ * @param {{ runTargets?: {id:string,label:string,icon?:string,hint?:string,lead?:string}[] }} config
+ */
+export function runTargetsOf(config = {}) {
+  const list = Array.isArray(config?.runTargets) ? config.runTargets : [];
+  return list.filter((t) => t && typeof t.id === 'string' && t.id && typeof t.label === 'string' && t.label);
+}
+
+/** The default target's id: the host's choice when it is offered, else the first target. */
+export function resolveRunDefault(targets, id) {
+  const list = Array.isArray(targets) ? targets : [];
+  if (list.some((t) => t.id === id)) return id;
+  return list[0]?.id ?? null;
+}

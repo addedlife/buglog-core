@@ -233,6 +233,33 @@ export const PANEL_CSS = `
   border-top: 1px solid var(--md-sys-color-outline-variant);
   flex-shrink: 0;
 }
+/* Opt-in split run button (config.runTargets): M3 split button — two filled
+   buttons 2px apart, the inner corners squared to the small shape, the outer
+   corners fully round. The menu hangs off the trailing half. */
+.split { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.split__lead {
+  --md-filled-button-container-shape-start-start: 20px;
+  --md-filled-button-container-shape-end-start: 20px;
+  --md-filled-button-container-shape-start-end: 4px;
+  --md-filled-button-container-shape-end-end: 4px;
+}
+.split__trail {
+  --md-filled-button-container-shape-start-start: 4px;
+  --md-filled-button-container-shape-end-start: 4px;
+  --md-filled-button-container-shape-start-end: 20px;
+  --md-filled-button-container-shape-end-end: 20px;
+  --md-filled-button-leading-space: 8px;
+  --md-filled-button-trailing-space: 8px;
+  min-width: 0;
+}
+.split__trail .buglog-symbol { font-size: 20px; }
+.split__menu { --md-menu-container-color: var(--md-sys-color-surface-container); min-width: 260px; }
+.split__note {
+  padding: 8px 16px 6px;
+  font: 400 12px/1.5 Roboto, system-ui, sans-serif;
+  letter-spacing: .4px;
+  color: var(--md-sys-color-on-surface-variant);
+}
 /* Bottom-right corner grip. A plain resize affordance, drawn as two rules
    rather than an icon so it stays quiet. */
 .panel__grip {

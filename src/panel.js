@@ -32,7 +32,8 @@
 //   buglog:add     { text, type, files }        files only when attachments are on
 //   buglog:update  { id, patch }                patch is a plain object
 //   buglog:delete  { id }
-//   buglog:run     { brief }                    only when runBrief is configured
+//   buglog:run     { brief, target? }           only when runBrief is configured;
+//                                               target only with runTargets
 //   buglog:open / buglog:close                  panel visibility changed
 //
 // `buglog:add` and `buglog:update` may be answered: set `detail.result` to a
@@ -53,7 +54,7 @@ import {
   displayText, formatRel, sequenceNumbers, needsSummary,
 } from './model.js';
 import { OWNER, noteAuthor, noteKey, appendNote, threadNotes, awaitingCoder } from './notes.js';
-import { copyForTeam, runBrief } from './handoff.js';
+import { copyForTeam, runBrief, runTargetsOf, resolveRunDefault } from './handoff.js';
 
 const FALLBACK_TAGS = {
   'md-fab': 'button',
@@ -505,7 +506,7 @@ export class BuglogPanel extends HTMLElement {
         role: kind === 'error' ? 'alert' : 'status',
         onclick: kind === 'error' ? () => { this.#banner = null; this.#render(); } : null,
       },
-      sym(kind === 'error' ? 'error' : 'mark_email_read'),
+      sym(kind === 'error' ? 'error' : kind === 'info' ? 'info' : 'mark_email_read'),
       el('span', { text, style: 'flex:1;min-width:0' }),
     );
   }
@@ -1250,7 +1251,9 @@ export class BuglogPanel extends HTMLElement {
     // Hands an agent a complete job rather than a readable list: where the
     // queue is, what a finished ticket looks like, and every open ticket in
     // full with its id.
-    if (this.#config.runBrief) {
+    if (this.#config.runBrief && runTargetsOf(this.#config).length) {
+      foot.append(this.#renderRunSplit());
+    } else if (this.#config.runBrief) {
       const run = el('md-text-button', {
         onclick: () => {
           const brief = runBrief(this.#bugs, {
@@ -1268,6 +1271,77 @@ export class BuglogPanel extends HTMLElement {
       foot.append(run);
     }
     return foot;
+  }
+
+  // Opt-in (config.runTargets): the run button becomes an M3 split button. The
+  // leading half runs the host's default target; the trailing half opens a menu
+  // of every target, the default marked with a check. Picking from the menu runs
+  // that target once and does not change the default — the host owns that.
+  // Either way the brief is on the clipboard before the event leaves, exactly as
+  // the single button does, and `buglog:run` carries `{ brief, target }`.
+  #renderRunSplit() {
+    const targets = runTargetsOf(this.#config);
+    const defId = resolveRunDefault(targets, this.#config.runDefault);
+    const def = targets.find((t) => t.id === defId);
+    const fire = (target) => {
+      const brief = runBrief(this.#bugs, {
+        productName: this.#config.productName || 'this app',
+        appVersion: this.#config.appVersion || '',
+        ...this.#config.runBrief,
+      });
+      navigator.clipboard?.writeText(brief).catch(() => {});
+      this.#emit('run', { brief, target });
+    };
+
+    const wrap = el('div', { class: 'split', role: 'group' });
+    const lead = el('md-filled-button', {
+      class: 'split__lead',
+      title: `Start buglog run: ${def.label}`,
+      onclick: () => fire(defId),
+    });
+    const ric = sym('rocket_launch');
+    ric.slot = 'icon';
+    lead.append(ric, el('span', { text: def.lead || 'Start buglog run' }));
+
+    const trail = el('md-filled-button', {
+      class: 'split__trail',
+      ariaLabel: 'Choose where to start the buglog run',
+      ariaHasPopup: 'menu',
+    }, sym('arrow_drop_down'));
+    const menu = el('md-menu', { positioning: 'popover', class: 'split__menu' });
+    const nativeFallback = menu.classList.contains('md-fallback');
+    if (nativeFallback) menu.hidden = true;
+    trail.addEventListener('click', () => {
+      menu.anchorElement = trail;
+      menu.open = !menu.open;
+      if (nativeFallback) menu.hidden = !menu.open;
+      trail.ariaExpanded = String(!!menu.open);
+    });
+    for (const t of targets) {
+      const item = el('md-menu-item', {
+        onclick: () => {
+          if (nativeFallback) menu.hidden = true;
+          fire(t.id);
+        },
+      });
+      const ic = sym(t.icon || 'rocket_launch');
+      ic.slot = 'start';
+      item.append(ic, el('div', { slot: 'headline', text: t.label }));
+      if (t.hint) item.append(el('div', { slot: 'supporting-text', text: t.hint }));
+      if (t.id === defId) {
+        const check = sym('check');
+        check.slot = 'end';
+        check.title = 'Default';
+        item.append(check);
+      }
+      menu.append(item);
+    }
+    if (this.#config.runDefaultNote) {
+      menu.append(el('md-divider'));
+      menu.append(el('div', { class: 'split__note', text: this.#config.runDefaultNote }));
+    }
+    wrap.append(lead, trail, menu);
+    return wrap;
   }
 
   /* ── Drag / resize (opt-in) ───────────────────────────────────────────── */
