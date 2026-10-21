@@ -29,7 +29,9 @@
 //
 // ── What the host listens for ───────────────────────────────────────────────
 //
-//   buglog:add     { text, type, files }        files only when attachments are on
+//   buglog:add     { text, type, files, sendNow? }
+//                                               files only when attachments are on;
+//                                               sendNow only with config.sendNow, when ticked
 //   buglog:update  { id, patch }                patch is a plain object
 //   buglog:delete  { id }
 //   buglog:run     { brief, target? }           only when runBrief is configured;
@@ -178,6 +180,7 @@ export class BuglogPanel extends HTMLElement {
   // cannot lose half a sentence.
   #draftText = '';
   #draftType = 'bug';
+  #draftSendNow = false;
   #status = '';
   #draftField = null;
   #editText = null;
@@ -631,7 +634,22 @@ export class BuglogPanel extends HTMLElement {
       }),
     );
 
-    wrap.append(controls, el('span', { class: 'add__status', text: this.#status || '' }));
+    wrap.append(controls);
+
+    // Opt-in (config.sendNow): one checkbox under the composer. Ticked, the
+    // add event carries sendNow:true so the host can start work on this one
+    // ticket right away; it is saved like any other either way. It clears
+    // after each send, because it is a choice about this ticket, not a mode.
+    if (cfg.sendNow) {
+      const label = typeof cfg.sendNow === 'object' && cfg.sendNow.label ? cfg.sendNow.label : 'Send now';
+      const box = customElements.get('md-checkbox')
+        ? el('md-checkbox', { 'touch-target': 'wrapper', checked: this.#draftSendNow, ariaLabel: label })
+        : el('input', { type: 'checkbox', checked: this.#draftSendNow, ariaLabel: label });
+      box.addEventListener('change', (e) => { this.#draftSendNow = !!e.target.checked; });
+      wrap.append(el('label', { class: 'add__sendnow' }, box, el('span', { text: label })));
+    }
+
+    wrap.append(el('span', { class: 'add__status', text: this.#status || '' }));
     return wrap;
   }
 
@@ -729,8 +747,12 @@ export class BuglogPanel extends HTMLElement {
     this.#render();
     const files = this.#draftFiles.map((r) => r.file);
     try {
-      const result = await this.#send('add', { text, type: this.#draftType || 'bug', files });
+      const result = await this.#send('add', {
+        text, type: this.#draftType || 'bug', files,
+        ...(this.#config.sendNow && this.#draftSendNow ? { sendNow: true } : {}),
+      });
       this.#draftText = '';
+      this.#draftSendNow = false;
       for (const r of this.#draftFiles) { try { URL.revokeObjectURL(r.previewUrl); } catch { /* already gone */ } }
       this.#draftFiles = [];
       this.#status = '';

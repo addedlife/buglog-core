@@ -300,6 +300,7 @@ export const PANEL_CSS = `
 .add md-outlined-text-field { width: 100%; }
 .add__controls { display: flex; gap: 10px; align-items: center; }
 .add__controls md-outlined-select { flex: 1; min-width: 0; }
+.add__sendnow { display: flex; align-items: center; gap: 4px; align-self: flex-start; cursor: pointer; color: var(--md-sys-color-on-surface); font: 400 14px/20px Roboto, system-ui, sans-serif; letter-spacing: .25px; }
 .add__status {
   color: var(--md-sys-color-on-surface-variant);
   min-height: 1.2em;
