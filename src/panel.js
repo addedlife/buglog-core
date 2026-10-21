@@ -190,6 +190,7 @@ export class BuglogPanel extends HTMLElement {
   #scrollTop = 0;
   #restoring = false;
   #restoreToken = 0;
+  #hostSlot = el('slot', { name: 'host' });
 
   constructor() {
     super();
@@ -477,7 +478,12 @@ export class BuglogPanel extends HTMLElement {
 
     const body = el('div', { class: 'panel__body' });
     if (this.#banner) body.append(this.#renderBanner());
-    body.append(this.#renderComposer(), this.#renderFilters(), this.#renderList());
+    // A host's own block, under the banner: whatever light-DOM child it gives
+    // slot="host". The one slot node is kept across rebuilds and is back in
+    // place before the browser next renders, so a field typed in there keeps
+    // its focus and text while the panel repaints. A host that slots nothing
+    // gets nothing.
+    body.append(this.#hostSlot, this.#renderComposer(), this.#renderFilters(), this.#renderList());
 
     panel.append(header, body, this.#renderFooter());
     if (draggable) panel.append(this.#wireResize(el('div', { class: 'panel__grip' }), panel));
