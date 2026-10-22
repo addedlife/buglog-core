@@ -71,7 +71,7 @@ panel.addEventListener('buglog:delete', (e) => myStore.remove(e.detail.id));
 
 | Event | `detail` | When |
 |---|---|---|
-| `buglog:add` | `{ text, type, files, sendNow? }` | Composer submitted. `files` only when attachments are on. `sendNow: true` only with `config.sendNow` and its box ticked. |
+| `buglog:add` | `{ text, type, files, sendNow? }` | Composer submitted. `files` only when attachments are on. `sendNow: true` only with `config.sendNow`, when its pill was tapped. |
 | `buglog:update` | `{ id, patch }` | Any status change, edit, resolve, or reply. |
 | `buglog:delete` | `{ id }` | Delete picked from the row menu. |
 | `buglog:run` | `{ brief }` | "Start buglog run" pressed. |
@@ -111,7 +111,7 @@ the smaller of the two panels; each flag below is a feature the larger one has.
 | `runTargets` | `[{ id, label, icon?, hint?, lead? }]` | Opt-in, needs `runBrief`. The run button becomes an M3 split button: the leading half runs the default target (its `lead` is the button text), the trailing half opens a menu of every target with the default checked. `buglog:run` then carries `{ brief, target }`. Picking from the menu never changes the default. Unset: the single button, unchanged. |
 | `runDefault` | string | The target id the leading half runs. Unknown or unset: the first target. |
 | `runDefaultNote` | string | Optional line under the menu, e.g. where the default is changed. |
-| `sendNow` | `true` or `{ label }` | Opt-in. A checkbox under the composer (default label "Send now"). Ticked, `buglog:add` carries `sendNow: true` so the host can start work on that ticket at once. It clears after every send. |
+| `sendNow` | `true` or `{ label }` | Opt-in. A small tonal pill under the Add button (default label "Add and send now"). Tapping it saves the ticket like Add, and `buglog:add` carries `sendNow: true` so the host can start work on that ticket at once. |
 | `isNewer` | `(a, b) => boolean` | Version comparison for the `fixedIn` marker. |
 
 ### Stacking — set this, or the panel looks broken
