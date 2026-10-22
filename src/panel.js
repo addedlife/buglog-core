@@ -193,6 +193,10 @@ export class BuglogPanel extends HTMLElement {
   #restoring = false;
   #restoreToken = 0;
   #hostSlot = el('slot', { name: 'host' });
+  // A host's block after the list (slot="list-end"), e.g. a "See all" pill
+  // when the host hands the panel only its newest tickets. Kept across
+  // rebuilds the same way as #hostSlot.
+  #endSlot = el('slot', { name: 'list-end' });
 
   constructor() {
     super();
@@ -485,7 +489,7 @@ export class BuglogPanel extends HTMLElement {
     // place before the browser next renders, so a field typed in there keeps
     // its focus and text while the panel repaints. A host that slots nothing
     // gets nothing.
-    body.append(this.#hostSlot, this.#renderComposer(), this.#renderFilters(), this.#renderList());
+    body.append(this.#hostSlot, this.#renderComposer(), this.#renderFilters(), this.#renderList(), this.#endSlot);
 
     panel.append(header, body, this.#renderFooter());
     if (draggable) panel.append(this.#wireResize(el('div', { class: 'panel__grip' }), panel));
